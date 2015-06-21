@@ -1,0 +1,42 @@
+<Test>
+	<TagWithoutAttr>value</TagWithoutAttr>
+	<TagWithAttr attr1="value" attr2="value with quotes">value with spaces</TagWithAttr>
+	<TagWithChildren>	<!-- this comment should be ignored -->
+		<ThisIsAChild>value</ThisIsAChild>
+		<ThisIsAnotherChildWithAttr attr="hello">value</ThisIsAnotherChildWithAttr>
+		<YetAnotherChildWithAttr attr="hello">"hi # this should not be parsed as comment"</YetAnotherChildWithAttr>
+	</TagWithChildren>
+
+	<!-- this is comment to be ignored -->
+
+	<TagWithMultiLineValue><![CDATA[
+		All this content is
+		multi line value
+
+		and it ends here
+		<EvenXMLWorksHere attr="hi">
+			xml value
+		</EvenXMLWorksHere>]]>
+	</TagWithMultiLineValue>
+
+	<TagWithMultiLineValue>This allows you to have " without closing the quotes</TagWithMultiLineValue>
+
+	<!-- multiline comment
+	#this should just be ignored
+
+	-->
+
+	<TagHierarchy anotherAttr="hello there" yetanother="multi spaces here"> <!--this comment will be ignored-->
+		<FirstChild>
+			<AnotherChild attr="hi">
+				<YetAnother> has value</YetAnother>
+				<YetYetAnother><![CDATA[hello there, <most stuff is ok> #except # and " (which would require """)]]></YetYetAnother>
+			</AnotherChild>
+			<OhBoy>
+				<!--# ignore this comment-->
+				<ThisHasNoValueNorChildren />
+			</OhBoy>
+		</FirstChild>
+		<NoChildrenHere/> <!--ignore me-->
+	</TagHierarchy>
+</Test>

@@ -1,0 +1,37 @@
+TagWithoutAttr value
+TagWithoutAttr(id="") value
+	assertion(type="XPath" query="\\rte") dsfds
+TagWithAttr(attr1=value attr2="value with quotes" attr3withoutval) value with spaces
+TagWithChildren	# this comment should be ignored
+	ThisIsAChild value
+	ThisIsAnotherChildWithAttr(attr=hello) value
+	YetAnotherChildWithAttr (attr=hello) "hi # this should not be parsed as comment"
+
+# this is comment to be ignored
+
+TagWithMultiLineValue """
+	All this content is
+	multi line value
+
+	and it ends here
+	<EvenXMLWorksHere attr="hi">
+		xml value
+	</EvenXMLWorksHere>
+"""
+
+TagWithMultiLineValue """This allows you to have " without closing the quotes"""
+
+# multiline comment
+#this should just be ignored
+#
+
+TagHierarchy(anotherAttr="hello there" yetanother="multi spaces here") #this comment will be ignored
+	FirstChild
+		AnotherChild(attr=hi)
+
+			YetAnother has value
+			YetYetAnother hello there, <most stuff is ok> #except # and " (which would require """)
+		OhBoy
+			# ignore this comment
+			ThisHasNoValueNorChildren ""
+	NoChildrenHere "" #ignore me
