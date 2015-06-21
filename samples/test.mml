@@ -9,7 +9,7 @@ TagWithChildren	# this comment should be ignored
 
 # this is comment to be ignored
 
-TagWithMultiLineValue """
+TagWithMultiLineValue [[[
 	All this content is
 	multi line value
 
@@ -17,7 +17,7 @@ TagWithMultiLineValue """
 	<EvenXMLWorksHere attr="hi">
 		xml value
 	</EvenXMLWorksHere>
-"""
+]]]
 
 TagWithMultiLineValue """This allows you to have " without closing the quotes"""
 
