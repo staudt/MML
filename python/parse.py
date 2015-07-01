@@ -2,42 +2,87 @@
 # -*- coding: utf-8 -*-
 
 class state:
-    IDENTATION, TAG, ATTRIBUTES, VALUE = range(4)
+    IDENT, TAG, ATTR_NAME, ATTR_VALUE, VALUE = range(5)
+SPACES = (' ', '\t')
+QUOTES = ('"', '\'')
+
+class ParseException(Exception):  # TODO: get line and col
+    pass
 
 with open('../samples/test.mml', 'rb') as f:
     content = f.read()
 
 for line in iter(content.splitlines()):
-    expect = state.IDENTATION
-    parsed_line = { 'ident': '', 'tag': '', 'attributes': {}, 'value': '', 'children': [] }
+    expect = state.IDENT
+    attr_name, attr_value, attr_quoted = None, None, False
+    tag = { 'ident': '', 'name': '', 'attributes': {}, 'value': None, 'children': [] }
     for c in range(len(line)):
-        if expect == state.IDENTATION:
-           if line[c] == '#':
-                break
-           if line[c] in [' ', '\t']:
-                parsed_line['ident'] = '%s%s' % (parsed_line['ident'], line[c])
+        if line[c] == '#':
+            break
+        if expect == state.IDENT:
+           if line[c] in SPACES:
+                tag['ident'] = '%s%s' % (tag['ident'], line[c])
            else:
                 expect = state.TAG
         if expect == state.TAG:
-            if line[c] == '#':
-                break
             if line[c] == '(':
-                expect = state.ATTRIBUTES
+                expect = state.ATTR_NAME
             elif line[c] == ' ':
                 expect = state.VALUE
             else:
-                parsed_line['tag'] = '%s%s' % (parsed_line['tag'], line[c])
-        elif expect == state.ATTRIBUTES:
-            if line[c] == '#':
-                #fail
-                pass
+                tag['name'] = '%s%s' % (tag['name'], line[c])
+        elif expect == state.ATTR_NAME:
             if line[c] == ')':
+                if attr_name:
+                    tag['attributes'][attr_name] = ''
                 expect = state.VALUE
+            elif line[c] in SPACES:
+                tag['attributes'][attr_name] = ''
+                attr_name, attr_value, attr_quoted = None, None, False
+            elif line[c] == '=':
+                if not attr_name:
+                    raise ParseException('Unexpected "="')
+                expect = state.ATTR_VALUE
             else:
-                pass
-                # attr parse not yet implemented implemented yet
+                if not attr_name:
+                    if line[c] not in SPACES:
+                        attr_name = line[c]
+                else:
+                    if line[c] in SPACES:
+                        raise ParseException('Unexpected space in attribute name')
+                    attr_name = '%s%s' % (attr_name if attr_name else '', line[c])
+        elif expect == state.ATTR_VALUE:
+            if not attr_value:
+                if line[c] in SPACES:
+                    raise ParseException('Unexpected space in attribute name')
+                if line[c] in QUOTES:
+                    attr_quoted, attr_value = True, ''
+                else:
+                    attr_value = line[c]
+            else:
+                if attr_quoted:
+                    if line[c] in QUOTES:
+                        tag['attributes'][attr_name] = attr_value
+                        attr_name, attr_value, attr_quoted = None, None, False
+                        expect = state.ATTR_NAME
+                    else:
+                        attr_value = '%s%s' % (attr_value, line[c])
+                else:
+                    if line[c] in QUOTES:
+                        ParseException('Unexpected character inside attribute value')
+                    if line[c] in SPACES:
+                        if len(attr_value)==0:
+                            ParseException('Unexpected space in attribute value')
+                        else:
+                            tag['attributes'][attr_name] = attr_value
+                            attr_name, attr_value, attr_quoted = None, None, False
+                            expect = state.ATTR_NAME
+                    else:
+                        attr_value = '%s%s' % (attr_value, line[c])
         elif expect == state.VALUE:
-            if line[c] == '#':
-                break
-            parsed_line['value'] = '%s%s' % (parsed_line['value'], line[c])
-    print parsed_line
+            if not tag['value']:
+                tag['value'] = ''
+            tag['value'] = '%s%s' % (tag['value'], line[c])
+    print(tag)
+    if expect in (state.ATTR_NAME, state.ATTR_VALUE):
+        raise ParseException('Unexpected break when parsing attributes')
