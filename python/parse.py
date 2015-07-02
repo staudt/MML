@@ -52,7 +52,7 @@ for line in iter(content.splitlines()):
                         raise ParseException('Unexpected space in attribute name')
                     attr_name = '%s%s' % (attr_name if attr_name else '', line[c])
         elif expect == state.ATTR_VALUE:
-            if not attr_value:
+            if attr_value is None:
                 if line[c] in SPACES:
                     raise ParseException('Unexpected space in attribute name')
                 if line[c] in QUOTES:
@@ -80,9 +80,11 @@ for line in iter(content.splitlines()):
                     else:
                         attr_value = '%s%s' % (attr_value, line[c])
         elif expect == state.VALUE:
-            if not tag['value']:
+            if tag['value'] is None:
                 tag['value'] = ''
             tag['value'] = '%s%s' % (tag['value'], line[c])
+    print(line)
     print(tag)
+    print('')
     if expect in (state.ATTR_NAME, state.ATTR_VALUE):
         raise ParseException('Unexpected break when parsing attributes')
