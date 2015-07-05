@@ -1,10 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+import re
 
 class state:
     IDENT, TAG, ATTR_NAME, ATTR_VALUE, VALUE = range(5)
 SPACES = (' ', '\t')
 QUOTES = ('"', '\'')
+XML_NAME_REGEX = '[a-zA-Z_:]([a-zA-Z0-9_:.])*' # special chars no supported yet
 
 class ParseException(Exception):  # TODO: get line and col
     pass
@@ -12,12 +14,12 @@ class ParseException(Exception):  # TODO: get line and col
 with open('../samples/test.mml', 'rb') as f:
     content = f.read()
 
+results = []
 for line in iter(content.splitlines()):
     line = line.decode('utf-8')
-    print(line)
     expect = state.IDENT
     attr_name, attr_value, attr_quoted = None, None, False
-    tag = { 'ident': '', 'name': '', 'attributes': {}, 'value': None, 'children': [] }
+    tag = {'ident': '', 'name': '', 'attributes': {}, 'value': None, 'children':[]}
     for c in range(len(line)):
         if line[c] == '#':
             break
@@ -88,7 +90,26 @@ for line in iter(content.splitlines()):
             if tag['value'] is None:
                 tag['value'] = ''
             tag['value'] = '%s%s' % (tag['value'], line[c])
-    print(tag)
-    print('')
+    print(line); print(tag); print('')
     if expect in (state.ATTR_NAME, state.ATTR_VALUE):
         raise ParseException('Unexpected break when parsing attributes')
+    
+    # Insert based on ident
+    """
+    if len(result)==0:
+        results.append(tag)
+        results_extra.append(tag_extra)
+    else:
+        relative = find_relative(tag_extra, results_extra)
+        if relative:
+            tag_extra.parent = relative.parent
+            if parent:
+                results[parent]['children'].append(tag)
+        else:
+            if tag_extra['ident'].startswith(results_extra[-1]['ident']) and
+               len(tag_extra['ident'])>len(results_extra[-1]['ident']):
+                tag_extra.parent(results_extra[-1])
+            else:
+                raise ParseException('Identation doesn\'t match any outer identation level')
+        results_extra.append(tag_extra)
+    """
