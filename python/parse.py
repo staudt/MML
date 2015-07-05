@@ -13,6 +13,8 @@ with open('../samples/test.mml', 'rb') as f:
     content = f.read()
 
 for line in iter(content.splitlines()):
+    line = line.decode('utf-8')
+    print(line)
     expect = state.IDENT
     attr_name, attr_value, attr_quoted = None, None, False
     tag = { 'ident': '', 'name': '', 'attributes': {}, 'value': None, 'children': [] }
@@ -68,6 +70,9 @@ for line in iter(content.splitlines()):
                     else:
                         attr_value = '%s%s' % (attr_value, line[c])
                 else:
+                    if line[c] == ')':
+                       tag['attributes'][attr_name] = attr_value
+                       expect = state.VALUE
                     if line[c] in QUOTES:
                         ParseException('Unexpected character inside attribute value')
                     if line[c] in SPACES:
@@ -83,7 +88,6 @@ for line in iter(content.splitlines()):
             if tag['value'] is None:
                 tag['value'] = ''
             tag['value'] = '%s%s' % (tag['value'], line[c])
-    print(line)
     print(tag)
     print('')
     if expect in (state.ATTR_NAME, state.ATTR_VALUE):
