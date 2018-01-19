@@ -1,0 +1,12 @@
+!docType(html)
+html (lang='en-US')
+  head
+    title Page Title
+    script(type="text/javascript") """
+      if (foo) bar(1+3)
+    """
+    #ignore me
+  body
+    h1 Hello, I'm a title
+    p '''Hi!
+         this is a text'''
