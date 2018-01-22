@@ -7,25 +7,60 @@ class Line:
         self.attr = None
         self.value = None
         self.state = 'ident'
+        self.children = []
+        self.parent = None
 
 class Parser:
+    code = []
+
     def parse(self, content):
-        output = []
-        lines = self.get_lines(content)
-        return output
+        self.get_lines(content)
+
+    def add_line(self, line):
+        if len(self.code)==0:
+            self.code.append(line)
+            return
+        bottom = self.code[-1]
+        while len(bottom.children) > 0:
+            bottom = bottom.children[-1]
+        if len(line.ident) == len(bottom.ident):
+            if bottom.parent:
+                line.parent = bottom.parent
+                bottom.parent.children.append(line)
+            else:
+                self.code.append(line)
+            return
+        elif len(line.ident) > len(bottom.ident):
+            line.parent = bottom
+            bottom.children.append(line)
+            return
+        else:
+            while len(line.ident) < len(bottom.ident):
+                bottom = bottom.parent
+                if not bottom:
+                    self.code.append(line)
+                    return
+            if len(line.ident) == len(bottom.ident):
+                if bottom.parent:
+                    line.parent = bottom.parent
+                    bottom.parent.children.append(line)
+                else:
+                    self.code.append(line)
+                return
+        raise IndentationError('Can\t find a fit for the given identation')
+
 
     def get_lines(self, content):
-        lines = []
         line = Line()
         for char in content:
             if line.state == 'find_EOL':
                 if char == '\n':
                     if line.tag:
-                        lines.append(line)
+                        self.add_line(line)
                     line = Line()
             elif line.state == 'ident':
                 if char in [' ', '\t']:
-                    line.ident += char
+                    line.ident += ' ' # tabs translate to single spaces
                 elif char == '#':
                     line.state = 'find_EOL'
                 elif char == '\n':
@@ -35,7 +70,7 @@ class Parser:
                     line.tag += char
             elif line.state == 'tag':
                 if char in ['\n']:
-                    lines.append(line)
+                    self.add_line(line)
                     line = Line()
                 elif char == '#':
                     line.state = 'find_EOL'
@@ -47,7 +82,7 @@ class Parser:
                     line.tag += char
             elif line.state == 'after_tag':
                 if char in ['\n']:
-                    lines.append(line)
+                    self.add_line(line)
                     line = Line()
                 elif char == '#':
                     line.state = 'find_EOL'
@@ -66,7 +101,7 @@ class Parser:
                     line.attr_string += char
             elif line.state == 'value':
                 if char in ['\n']:
-                    lines.append(line)
+                    self.add_line(line)
                     line = Line()
                 elif char == '#':
                     line.state = 'find_EOL'
@@ -83,8 +118,8 @@ class Parser:
                         line.value = line.value[:-3]
                         line.state = 'find_EOL'
         if line.tag: # if it got to EOF without saving the last one
-            lines.append(line)
-        return lines
+            self.add_line(line)
+        return True
 
     def parse_attributes(self, attr_string):
         attr = {}
