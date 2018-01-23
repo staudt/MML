@@ -1,127 +1,123 @@
+import xml.etree.ElementTree as ET
 
-class Line:
+class Element:
     def __init__(self):
         self.ident = ''
         self.tag = ''
         self.attr_string = ''
         self.attr = None
-        self.value = None
+        self.text = None
         self.state = 'ident'
         self.children = []
         self.parent = None
 
 class Parser:
-    code = []
+    tree = []
 
-    def parse(self, content):
-        self.get_lines(content)
-
-    def add_line(self, line):
-        if len(self.code)==0:
-            self.code.append(line)
-            return
-        bottom = self.code[-1]
-        while len(bottom.children) > 0:
-            bottom = bottom.children[-1]
-        if len(line.ident) == len(bottom.ident):
-            if bottom.parent:
-                line.parent = bottom.parent
-                bottom.parent.children.append(line)
-            else:
-                self.code.append(line)
-            return
-        elif len(line.ident) > len(bottom.ident):
-            line.parent = bottom
-            bottom.children.append(line)
-            return
-        else:
-            while len(line.ident) < len(bottom.ident):
-                bottom = bottom.parent
-                if not bottom:
-                    self.code.append(line)
-                    return
-            if len(line.ident) == len(bottom.ident):
-                if bottom.parent:
-                    line.parent = bottom.parent
-                    bottom.parent.children.append(line)
-                else:
-                    self.code.append(line)
-                return
-        raise IndentationError('Can\t find a fit for the given identation')
-
-
-    def get_lines(self, content):
-        line = Line()
+    def __init__(self, content):
+        el = Element()
         for char in content:
-            if line.state == 'find_EOL':
+            if el.state == 'find_EOL':
                 if char == '\n':
-                    if line.tag:
-                        self.add_line(line)
-                    line = Line()
-            elif line.state == 'ident':
+                    if el.tag:
+                        self._add_element(el)
+                    el = Element()
+            elif el.state == 'ident':
                 if char in [' ', '\t']:
-                    line.ident += ' ' # tabs translate to single spaces
+                    el.ident += ' ' # tabs translate to single spaces
                 elif char == '#':
-                    line.state = 'find_EOL'
+                    el.state = 'find_EOL'
                 elif char == '\n':
-                    line = Line()
+                    el = Element()
                 else:
-                    line.state = 'tag'
-                    line.tag += char
-            elif line.state == 'tag':
+                    el.state = 'tag'
+                    el.tag += char
+            elif el.state == 'tag':
                 if char in ['\n']:
-                    self.add_line(line)
-                    line = Line()
+                    self._add_element(el)
+                    el = Element()
                 elif char == '#':
-                    line.state = 'find_EOL'
+                    el.state = 'find_EOL'
                 elif char in [' ', '\t']:
-                    line.state = 'after_tag'
+                    el.state = 'after_tag'
                 elif char == '(':
-                    line.state = 'attr'
+                    el.state = 'attr'
                 else:
-                    line.tag += char
-            elif line.state == 'after_tag':
+                    el.tag += char
+            elif el.state == 'after_tag':
                 if char in ['\n']:
-                    self.add_line(line)
-                    line = Line()
+                    self._add_element(el)
+                    el = Element()
                 elif char == '#':
-                    line.state = 'find_EOL'
+                    el.state = 'find_EOL'
                 elif char == '(':
-                    line.state = 'attr'
+                    el.state = 'attr'
                 elif char not in [' ', '\t']:
-                    line.state = 'value'
-                    line.value = char
-            elif line.state == 'attr':
+                    el.state = 'text'
+                    el.text = char
+            elif el.state == 'attr':
                 if char in ['\n', '#']:
                     raise IndexError('")" Expected but got "%s"' % char)
                 elif char == ')':
-                    line.attr = self.parse_attributes(line.attr_string)
-                    line.state = 'value'
+                    el.attr = self._parse_attributes(el.attr_string)
+                    el.state = 'text'
                 else:
-                    line.attr_string += char
-            elif line.state == 'value':
+                    el.attr_string += char
+            elif el.state == 'text':
                 if char in ['\n']:
-                    self.add_line(line)
-                    line = Line()
+                    self._add_element(el)
+                    el = Element()
                 elif char == '#':
-                    line.state = 'find_EOL'
+                    el.state = 'find_EOL'
                 else:
-                    line.value = char if line.value == None else '%s%s' % (line.value, char)
+                    el.text = char if el.text == None else '%s%s' % (el.text, char)
                     if char in ['"', "'"]:
-                        if line.value.strip() in ['"""', "'''"]:
-                            line.state = 'value_triple_quote'
-                            line.value = ''
-            elif line.state == 'value_triple_quote':
-                line.value = '%s%s' % (line.value, char)
+                        if el.text.strip() in ['"""', "'''"]:
+                            el.state = 'text_triple_quote'
+                            el.text = ''
+            elif el.state == 'text_triple_quote':
+                el.text = '%s%s' % (el.text, char)
                 if char in ['"', "'"]:
-                    if line.value.endswith('"""') or line.value.endswith("'''"):
-                        line.value = line.value[:-3]
-                        line.state = 'find_EOL'
-        if line.tag: # if it got to EOF without saving the last one
-            self.add_line(line)
-        return True
+                    if el.text.endswith('"""') or el.text.endswith("'''"):
+                        el.text = el.text[:-3]
+                        el.state = 'find_EOL'
+        if el.tag: # if it got to EOF without saving the last one
+            self._add_element(el)
 
-    def parse_attributes(self, attr_string):
+    def _add_element(self, el):
+        if len(self.tree)==0:
+            self.tree.append(el)
+            return
+        bottom = self.tree[-1]
+        while len(bottom.children) > 0:
+            bottom = bottom.children[-1]
+        if len(el.ident) == len(bottom.ident):
+            if bottom.parent:
+                el.parent = bottom.parent
+                bottom.parent.children.append(el)
+            else:
+                self.tree.append(el)
+            return
+        elif len(el.ident) > len(bottom.ident):
+            el.parent = bottom
+            bottom.children.append(el)
+            return
+        else:
+            while len(el.ident) < len(bottom.ident):
+                bottom = bottom.parent
+                if not bottom:
+                    self.tree.append(el)
+                    return
+            if len(el.ident) == len(bottom.ident):
+                if bottom.parent:
+                    el.parent = bottom.parent
+                    bottom.parent.children.append(el)
+                else:
+                    self.tree.append(el)
+                return
+        raise IndentationError('Can\t find a fit for the given identation')
+
+    def _parse_attributes(self, attr_string):
         attr = {}
         state = 'name'
         name, value = '', None
@@ -161,6 +157,28 @@ class Parser:
             attr[name] = value
         return attr
 
+    def _to_xml_add(self, parent, element):
+        xml_el = ET.SubElement(parent, element.tag)
+        xml_el.text = element.text
+        xml_el.attrib = element.attr
+        for el in element.children:
+            self._to_xml_add(xml_el, el)
+
+    def to_xml(self):
+        if len(self.tree) == 0:
+            return ''
+        if len(self.tree) > 1: # XML requires a unique root, so this ups one level
+            root = ET.Element('root')
+            for el in self.tree:
+                self._to_xml_add(root, el)
+        else:
+            root = ET.Element(self.tree[0].tag)
+            root.text = self.tree[0].text
+            root.attrib = self.tree[0].attr
+            for el in self.tree[0].children:
+                self._to_xml_add(root, el)
+        return ET.dump(root)
+
 
 with open('../test/sample.mml') as f:
-    Parser().parse(f.read())
+    print(str(Parser(f.read()).to_xml()))
