@@ -1,5 +1,5 @@
 # MML
-A minimalistic replacement for XML inspired by [Jade](https://github.com/dscape/jade)
+A minimalistic replacement for XML inspired by [Jade](https://github.com/dscape/jade).
 
 It looks like this:
 ```shell
@@ -36,3 +36,5 @@ Which translates to:
 </html>
   
 ```
+
+It currently has a very basic implementation, just to show how it works. I'm curious to see if there is any interest in this format so that I can invest more time in a proper implementation. If you like it, let me know!
