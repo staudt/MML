@@ -145,7 +145,7 @@ class Parser:
                 if char in ['"', "'"]:
                     attr[name] = value
                     name, value = '', None
-                    state == 'wait_comma'
+                    state = 'wait_comma'
                 else:
                     value = char if not value else '%s%s' % (value, char)
             elif state == 'wait_comma':
